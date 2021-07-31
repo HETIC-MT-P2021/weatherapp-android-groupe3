@@ -5,15 +5,26 @@ import android.content.pm.PackageManager
 import android.location.Geocoder
 import android.location.Location
 import android.location.LocationManager
+import android.net.ConnectivityManager
+import android.net.NetworkCapabilities
+import android.os.Build
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.os.Looper
 import android.util.Log
 import android.widget.TextView
 import android.widget.Toast
+import androidx.annotation.RequiresApi
 import androidx.core.app.ActivityCompat
+import com.example.weatherapp.weather.WeatherResponse
+import com.example.weatherapp.weather.WeatherService
 import com.google.android.gms.location.*
 import com.google.android.gms.tasks.Task
+import retrofit2.Call
+import retrofit2.Callback
+import retrofit2.Response
+import retrofit2.Retrofit
+import retrofit2.converter.gson.GsonConverterFactory
 import java.util.*
 
 class MainActivity : AppCompatActivity() {
@@ -21,14 +32,75 @@ class MainActivity : AppCompatActivity() {
     private lateinit var locationRequest: LocationRequest
     private var permissionId = 1234
     private lateinit var locationTxt: TextView
+    private lateinit var countryName: String
+    private lateinit var cityName: String
+    private var weatherData: TextView? = null
 
+    @RequiresApi(Build.VERSION_CODES.M)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
+        weatherData = findViewById(R.id.currentWeatherTxt)
         locationTxt = findViewById(R.id.locationTxt)
         fusedLocationProviderClient = LocationServices.getFusedLocationProviderClient(this)
-        getLastLocation()
+        if (isNetworkAvailable(applicationContext)) {
+            getLastLocation()
+            getCurrentData()
+        }
+    }
+
+    @RequiresApi(Build.VERSION_CODES.M)
+    private fun isNetworkAvailable(context: Context) = (context.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager).run {
+        getNetworkCapabilities(activeNetwork)?.run {
+            hasTransport(NetworkCapabilities.TRANSPORT_CELLULAR) || hasTransport(NetworkCapabilities.TRANSPORT_WIFI) || hasTransport(NetworkCapabilities.TRANSPORT_ETHERNET)
+        } ?: false
+    }
+
+    private fun getCurrentData() {
+        val retrofit = Retrofit.Builder()
+            .baseUrl(BaseUrl)
+            .addConverterFactory(GsonConverterFactory.create())
+            .build()
+        val service = retrofit.create(WeatherService::class.java)
+        val call = service.getCurrentWeatherData(q, AppId, lang)
+        call.enqueue(object : Callback<WeatherResponse> {
+            override fun onResponse(call: Call<WeatherResponse>, response: Response<WeatherResponse>) {
+                if (response.code() == 200) {
+                    val weatherResponse = response.body()!!
+
+                    val stringBuilder = weatherResponse.weather[0].description +
+                            "\n" +
+                            "Température: " +
+                            weatherResponse.main!!.temp +
+                            "\n" +
+                            "Température(Min): " +
+                            weatherResponse.main!!.temp_min +
+                            "\n" +
+                            "Température(Max): " +
+                            weatherResponse.main!!.temp_max +
+                            "\n" +
+                            "Humidité: " +
+                            weatherResponse.main!!.humidity +
+                            "\n" +
+                            "Pression: " +
+                            weatherResponse.main!!.pressure
+
+                    weatherData!!.text = stringBuilder
+                }
+            }
+
+            override fun onFailure(call: Call<WeatherResponse>, t: Throwable) {
+                weatherData!!.text = t.message
+            }
+        })
+    }
+
+    companion object {
+        var BaseUrl = "http://api.openweathermap.org/"
+        var AppId = "f3aa9809cf0afaa4155a1dfe26f5d838"
+        var q = "paris"
+        var lang = "fr"
     }
 
     private fun getLastLocation() {
@@ -77,9 +149,7 @@ class MainActivity : AppCompatActivity() {
             // for ActivityCompat#requestPermissions for more details.
             return
         }
-        fusedLocationProviderClient.requestLocationUpdates(
-            locationRequest, locationCallback, Looper.myLooper()
-        )
+        fusedLocationProviderClient.requestLocationUpdates(locationRequest, locationCallback, Looper.myLooper())
     }
 
     private val locationCallback = object : LocationCallback() {
@@ -108,7 +178,6 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun getCityName(lat:Double, long:Double):String {
-        var cityName: String
         var geoCoder = Geocoder(this, Locale.getDefault())
         var address = geoCoder.getFromLocation(lat, long, 1)
         cityName = address[0].locality
@@ -116,7 +185,6 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun getCountryName(lat:Double, long:Double):String {
-        var countryName: String
         var geoCoder = Geocoder(this, Locale.getDefault())
         var address = geoCoder.getFromLocation(lat, long, 1)
         countryName = address[0].countryName
