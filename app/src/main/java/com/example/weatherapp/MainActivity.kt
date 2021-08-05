@@ -57,52 +57,6 @@ class MainActivity : AppCompatActivity() {
         } ?: false
     }
 
-    private fun getCurrentData() {
-        val retrofit = Retrofit.Builder()
-            .baseUrl(BaseUrl)
-            .addConverterFactory(GsonConverterFactory.create())
-            .build()
-        val service = retrofit.create(WeatherService::class.java)
-        val call = service.getCurrentWeatherData(q, AppId, lang)
-        call.enqueue(object : Callback<WeatherResponse> {
-            override fun onResponse(call: Call<WeatherResponse>, response: Response<WeatherResponse>) {
-                if (response.code() == 200) {
-                    val weatherResponse = response.body()!!
-
-                    val stringBuilder = weatherResponse.weather[0].description +
-                            "\n" +
-                            "Température: " +
-                            weatherResponse.main!!.temp +
-                            "\n" +
-                            "Température(Min): " +
-                            weatherResponse.main!!.temp_min +
-                            "\n" +
-                            "Température(Max): " +
-                            weatherResponse.main!!.temp_max +
-                            "\n" +
-                            "Humidité: " +
-                            weatherResponse.main!!.humidity +
-                            "\n" +
-                            "Pression: " +
-                            weatherResponse.main!!.pressure
-
-                    weatherData!!.text = stringBuilder
-                }
-            }
-
-            override fun onFailure(call: Call<WeatherResponse>, t: Throwable) {
-                weatherData!!.text = t.message
-            }
-        })
-    }
-
-    companion object {
-        var BaseUrl = "http://api.openweathermap.org/"
-        var AppId = "f3aa9809cf0afaa4155a1dfe26f5d838"
-        var q = "paris"
-        var lang = "fr"
-    }
-
     private fun getLastLocation() {
         if (checkPermission()) {
             if (isLocationEnabled()) {
@@ -189,6 +143,51 @@ class MainActivity : AppCompatActivity() {
         var address = geoCoder.getFromLocation(lat, long, 1)
         countryName = address[0].countryName
         return countryName
+    }
+
+    companion object {
+        var BaseUrl = "http://api.openweathermap.org/"
+        var AppId = "f3aa9809cf0afaa4155a1dfe26f5d838"
+        var lang = "fr"
+    }
+
+    private fun getCurrentData() {
+        val retrofit = Retrofit.Builder()
+            .baseUrl(BaseUrl)
+            .addConverterFactory(GsonConverterFactory.create())
+            .build()
+        val service = retrofit.create(WeatherService::class.java)
+        val call = service.getCurrentWeatherData(cityName, AppId, lang)
+        call.enqueue(object : Callback<WeatherResponse> {
+            override fun onResponse(call: Call<WeatherResponse>, response: Response<WeatherResponse>) {
+                if (response.code() == 200) {
+                    val weatherResponse = response.body()!!
+
+                    val stringBuilder = weatherResponse.weather[0].description +
+                            "\n" +
+                            "Température: " +
+                            weatherResponse.main!!.temp +
+                            "\n" +
+                            "Température(Min): " +
+                            weatherResponse.main!!.temp_min +
+                            "\n" +
+                            "Température(Max): " +
+                            weatherResponse.main!!.temp_max +
+                            "\n" +
+                            "Humidité: " +
+                            weatherResponse.main!!.humidity +
+                            "\n" +
+                            "Pression: " +
+                            weatherResponse.main!!.pressure
+
+                    weatherData!!.text = stringBuilder
+                }
+            }
+
+            override fun onFailure(call: Call<WeatherResponse>, t: Throwable) {
+                weatherData!!.text = t.message
+            }
+        })
     }
 
     override fun onRequestPermissionsResult(
