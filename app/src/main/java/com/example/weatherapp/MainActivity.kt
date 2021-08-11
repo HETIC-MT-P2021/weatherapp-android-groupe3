@@ -20,6 +20,9 @@ import com.example.weatherapp.weather.WeatherResponse
 import com.example.weatherapp.weather.WeatherService
 import com.google.android.gms.location.*
 import com.google.android.gms.tasks.Task
+import kotlinx.coroutines.GlobalScope
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import retrofit2.Call
 import retrofit2.Callback
 import retrofit2.Response
@@ -45,8 +48,11 @@ class MainActivity : AppCompatActivity() {
         locationTxt = findViewById(R.id.locationTxt)
         fusedLocationProviderClient = LocationServices.getFusedLocationProviderClient(this)
         if (isNetworkAvailable(applicationContext)) {
-            getLastLocation()
-            getCurrentData()
+            GlobalScope.launch {
+                getLastLocation()
+                delay(300)
+                getCurrentData()
+            }
         }
     }
 
@@ -146,7 +152,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     companion object {
-        var BaseUrl = "http://api.openweathermap.org/"
+        var BaseUrl = "https://api.openweathermap.org/"
         var AppId = "f3aa9809cf0afaa4155a1dfe26f5d838"
         var lang = "fr"
     }
