@@ -50,8 +50,6 @@ class MainActivity : AppCompatActivity() {
         if (isNetworkAvailable(applicationContext)) {
             GlobalScope.launch {
                 getLastLocation()
-                delay(300)
-                getCurrentData()
             }
         }
     }
@@ -68,6 +66,7 @@ class MainActivity : AppCompatActivity() {
             if (isLocationEnabled()) {
                 fusedLocationProviderClient.lastLocation.addOnCompleteListener { task ->
                     displayLocation(task)
+                    getCurrentData()
                 }
             } else {
                 Toast.makeText(this, "Please enable your location service", Toast.LENGTH_SHORT).show()
