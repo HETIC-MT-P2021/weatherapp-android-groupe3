@@ -1,3 +1,14 @@
 <resources>
     <string name="app_name">WeatherApp</string>
+    <string name="location_placeholder">Votre position</string>
+    <string name="status_placeholder">Météo actuelle</string>
+    <string name="temperature_placeholder">°C</string>
+    <string name="temp_min_placeholder">Temp min</string>
+    <string name="temp_max_placeholder">Temp max</string>
+    <string name="wind_image">Icone de vent</string>
+    <string name="pressure_image">Icone de pression</string>
+    <string name="humidity_image">Icone d\'humidité</string>
+    <string name="wind_value">Vent</string>
+    <string name="pressure_value">Pression</string>
+    <string name="humidity_value">Humidité</string>
 </resources>
