@@ -2,6 +2,8 @@ package com.example.weatherapp.weather
 
 import com.google.gson.annotations.SerializedName
 
+
+
 class WeatherResponse {
     @SerializedName("coord")
     var coord: Coord? = null
@@ -37,6 +39,8 @@ class Weather {
     @SerializedName("icon")
     var icon: String? = null
 }
+
+
 
 class Clouds {
     @SerializedName("all")

@@ -16,6 +16,7 @@ import android.widget.TextView
 import android.widget.Toast
 import androidx.annotation.RequiresApi
 import androidx.core.app.ActivityCompat
+import com.example.weatherapp.weather.ForecastResponse
 import com.example.weatherapp.weather.WeatherResponse
 import com.example.weatherapp.weather.WeatherService
 import com.google.android.gms.location.*
@@ -29,6 +30,18 @@ import retrofit2.Response
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
 import java.util.*
+import org.json.JSONObject
+import okhttp3.OkHttpClient
+import okhttp3.logging.HttpLoggingInterceptor
+
+
+
+
+
+
+
+
+
 
 class MainActivity : AppCompatActivity() {
     private lateinit var fusedLocationProviderClient: FusedLocationProviderClient
@@ -38,6 +51,7 @@ class MainActivity : AppCompatActivity() {
     private lateinit var countryName: String
     private lateinit var cityName: String
     private var weatherData: TextView? = null
+    private var forecastData: TextView? = null
 
     @RequiresApi(Build.VERSION_CODES.M)
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -45,6 +59,8 @@ class MainActivity : AppCompatActivity() {
         setContentView(R.layout.activity_main)
 
         weatherData = findViewById(R.id.currentWeatherTxt)
+        forecastData = findViewById(R.id.currentWeatherTxt2)
+
         locationTxt = findViewById(R.id.locationTxt)
         fusedLocationProviderClient = LocationServices.getFusedLocationProviderClient(this)
         if (isNetworkAvailable(applicationContext)) {
@@ -157,16 +173,33 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun getCurrentData() {
+        val logging = HttpLoggingInterceptor()
+// set your desired log level
+// set your desired log level
+        logging.level = HttpLoggingInterceptor.Level.BODY
+        val httpClient = OkHttpClient.Builder()
+// add your other interceptors …
+// add logging as last interceptor
+// add your other interceptors …
+// add logging as last interceptor
+        httpClient.addInterceptor(logging) // <-- this is the important line!
+
+
         val retrofit = Retrofit.Builder()
             .baseUrl(BaseUrl)
             .addConverterFactory(GsonConverterFactory.create())
+            .client(httpClient.build())
             .build()
         val service = retrofit.create(WeatherService::class.java)
+
         val call = service.getCurrentWeatherData(cityName, AppId, lang)
+
         call.enqueue(object : Callback<WeatherResponse> {
             override fun onResponse(call: Call<WeatherResponse>, response: Response<WeatherResponse>) {
                 if (response.code() == 200) {
                     val weatherResponse = response.body()!!
+
+                    Log.e("Weather response", weatherResponse.toString())
 
                     val stringBuilder = weatherResponse.weather[0].description +
                             "\n" +
@@ -191,6 +224,38 @@ class MainActivity : AppCompatActivity() {
 
             override fun onFailure(call: Call<WeatherResponse>, t: Throwable) {
                 weatherData!!.text = t.message
+            }
+        })
+
+        val call5Days = service.getCurrentForecastData("Paris", AppId, lang, "metric")
+        call5Days.enqueue(object : Callback<ForecastResponse> {
+            override fun onResponse(req: Call<ForecastResponse>, response: Response<ForecastResponse>) {
+                if (response.code() == 200) {
+                    val forecastResponse = response.body()!!
+
+                    val stringBuilder = forecastResponse.city!!.name +
+                            "\n" +
+                            "heure j1: " +
+                            Date(forecastResponse.list[0]!!.dt!!.toLong() * 1000) +
+                            "\n" +
+                            "heure j2: " +
+                            Date(forecastResponse.list[8]!!.dt!!.toLong() * 1000) +
+                            "\n" +
+                            "heure j3: " +
+                            Date(forecastResponse.list[16]!!.dt!!.toLong() * 1000) +
+                            "\n" +
+                            "heure j4: " +
+                            Date(forecastResponse.list[24]!!.dt!!.toLong() * 1000) +
+                            "\n" +
+                            "heure j5: " +
+                            Date(forecastResponse.list[32]!!.dt!!.toLong() * 1000)
+
+                    forecastData!!.text = stringBuilder
+                }
+            }
+
+            override fun onFailure(req: Call<ForecastResponse>, t: Throwable) {
+                forecastData!!.text = t.message
             }
         })
     }
